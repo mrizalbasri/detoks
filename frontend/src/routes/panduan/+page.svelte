@@ -17,6 +17,22 @@
 	let newFormal = $state('');
 	let newToxic = $state('');
 
+	let searchSlang = $state('');
+	let searchToxic = $state('');
+
+	let filteredSlangList = $derived(
+		slangList.filter(item => 
+			item.slang.toLowerCase().includes(searchSlang.toLowerCase()) || 
+			item.formal.toLowerCase().includes(searchSlang.toLowerCase())
+		)
+	);
+
+	let filteredToxicList = $derived(
+		toxicList.filter(word => 
+			word.toLowerCase().includes(searchToxic.toLowerCase())
+		)
+	);
+
 	onMount(() => {
 		loadLexicon();
 	});
@@ -170,9 +186,22 @@
 					</button>
 				</form>
 
+				<div class="search-wrapper" style="margin: 12px 0 8px;">
+					<span class="search-icon-inside">
+						<Search size={14} />
+					</span>
+					<input 
+						type="text" 
+						bind:value={searchSlang} 
+						placeholder="Cari kata slang atau baku..." 
+						class="search-input"
+						style="padding: 8px 12px 8px 32px; font-size: 0.85rem; background: rgba(0, 0, 0, 0.1);"
+					/>
+				</div>
+
 				<div class="lexicon-list-scroll">
 					<div class="lexicon-list">
-						{#each slangList as item}
+						{#each filteredSlangList as item}
 							<div class="lexicon-item">
 								<span class="slang-term">{item.slang}</span>
 								<span class="arrow">➔</span>
@@ -181,6 +210,8 @@
 									<Trash2 size={14} />
 								</button>
 							</div>
+						{:else}
+							<p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 16px 0;">Tidak ada slang yang cocok.</p>
 						{/each}
 					</div>
 				</div>
@@ -198,15 +229,30 @@
 					</button>
 				</form>
 
+				<div class="search-wrapper" style="margin: 12px 0 8px;">
+					<span class="search-icon-inside">
+						<Search size={14} />
+					</span>
+					<input 
+						type="text" 
+						bind:value={searchToxic} 
+						placeholder="Cari kata toxic..." 
+						class="search-input"
+						style="padding: 8px 12px 8px 32px; font-size: 0.85rem; background: rgba(0, 0, 0, 0.1);"
+					/>
+				</div>
+
 				<div class="lexicon-list-scroll">
 					<div class="lexicon-list">
-						{#each toxicList as word}
+						{#each filteredToxicList as word}
 							<div class="lexicon-item">
 								<span class="toxic-term">{word}</span>
 								<button onclick={() => removeToxicWord(word)} class="btn-delete" aria-label="Hapus">
 									<Trash2 size={14} />
 								</button>
 							</div>
+						{:else}
+							<p style="font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 16px 0;">Tidak ada kata toxic yang cocok.</p>
 						{/each}
 					</div>
 				</div>

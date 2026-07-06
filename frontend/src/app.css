@@ -2,7 +2,7 @@
 /* ponytail: single unified stylesheet with responsive and clean layout classes */
 
 :root {
-	--font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	--font-sans: 'IBM Plex Sans', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	--font-mono: 'JetBrains Mono', monospace;
 
 	/* Dark mode defaults */
@@ -34,7 +34,7 @@
 	--card-bg: rgba(255, 255, 255, 0.75);
 	--card-border: rgba(0, 0, 0, 0.08);
 	--text-primary: #111827;
-	--text-secondary: #4b5563;
+	--text-secondary: #374151; /* Increased contrast slate-700 */
 	
 	--color-accent: #0891b2;
 	--color-accent-hover: #0e7490;
@@ -265,3 +265,100 @@ textarea:focus, input[type="text"]:focus {
 	margin: 0 auto;
 	padding: 24px 16px;
 }
+
+/* UI Overhaul Extra Styles */
+.search-wrapper {
+	position: relative;
+	margin-bottom: 16px;
+	display: flex;
+	align-items: center;
+}
+
+.search-input {
+	padding-left: 40px !important;
+}
+
+.search-icon-inside {
+	position: absolute;
+	left: 14px;
+	color: var(--text-secondary);
+	pointer-events: none;
+	display: flex;
+	align-items: center;
+}
+
+/* Pulsing neon animation keyframes */
+@keyframes pulse-cyan {
+	0%, 100% { box-shadow: 0 0 10px rgba(6, 182, 212, 0.4), 0 0 20px rgba(6, 182, 212, 0.2); }
+	50% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.8), 0 0 35px rgba(6, 182, 212, 0.4); }
+}
+
+@keyframes pulse-rose {
+	0%, 100% { box-shadow: 0 0 10px rgba(244, 63, 94, 0.4), 0 0 20px rgba(244, 63, 94, 0.2); }
+	50% { box-shadow: 0 0 20px rgba(244, 63, 94, 0.8), 0 0 35px rgba(244, 63, 94, 0.4); }
+}
+
+@keyframes pulse-emerald {
+	0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.2); }
+	50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 0 35px rgba(16, 185, 129, 0.4); }
+}
+
+.pulsing-node-accent {
+	animation: pulse-cyan 2s infinite ease-in-out;
+}
+
+.pulsing-node-toxic {
+	animation: pulse-rose 2.5s infinite ease-in-out;
+}
+
+.pulsing-node-safe {
+	animation: pulse-emerald 2.5s infinite ease-in-out;
+}
+
+/* Drag-over active upload zone */
+.upload-zone.drag-over {
+	border-color: var(--color-accent) !important;
+	background: rgba(6, 182, 212, 0.08) !important;
+	box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);
+}
+
+.upload-zone:hover {
+	border-color: var(--color-accent-hover);
+	transform: translateY(-2px);
+}
+
+/* Clean filter button animations */
+.filter-btn {
+	background: transparent;
+	border: none;
+	padding: 6px 14px;
+	border-radius: 9999px;
+	color: var(--text-secondary);
+	font-weight: 500;
+	font-size: 0.85rem;
+	cursor: pointer;
+	transition: var(--transition-smooth);
+}
+
+.filter-btn.active, .filter-btn:hover {
+	color: var(--text-primary);
+	background: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme='light'] .filter-btn.active, :root[data-theme='light'] .filter-btn:hover {
+	background: rgba(0, 0, 0, 0.06);
+}
+
+/* Scrollbar customization for horizontal DFA trails */
+.dfa-path-scroll::-webkit-scrollbar {
+	height: 6px;
+}
+
+.dfa-path-scroll::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme='light'] .dfa-path-scroll::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.1);
+}
+

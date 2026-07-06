@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { analyzeText, type AnalysisResult } from '$lib/api';
-	import { CheckCircle2, Shield, BarChart3, ShieldCheck, AlertTriangle, User, Send, Languages, ClipboardCheck } from '@lucide/svelte';
+	import AutomataVisualizer from '$lib/components/AutomataVisualizer.svelte';
+	import { CheckCircle2, Shield, BarChart3, ShieldCheck, AlertTriangle, User, Send, Languages, ClipboardCheck, Code } from '@lucide/svelte';
 
 	let text = $state('');
 	let result = $state<AnalysisResult | null>(null);
@@ -16,10 +17,6 @@
 
 	onMount(() => {
 		loadStats();
-		startDemoLoop();
-		return () => {
-			if (demoInterval) clearInterval(demoInterval);
-		};
 	});
 
 	function loadStats() {
@@ -65,26 +62,6 @@
 		text = '';
 		result = null;
 		error = null;
-	}
-
-	// Standalone Illustrative Simulation Logic (for Cara Kerja Sistem)
-	let demoWord = 'goblok'; // Predefined toxic word to trace in DFA
-	let demoStep = $state(0); // 0 to 6
-	let demoStates = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q_toxic'];
-	let demoInterval: any = null;
-
-	function startDemoLoop() {
-		demoInterval = setInterval(() => {
-			if (demoStep < demoWord.length) {
-				demoStep++;
-			} else {
-				clearInterval(demoInterval);
-				setTimeout(() => {
-					demoStep = 0;
-					startDemoLoop();
-				}, 2000);
-			}
-		}, 1200);
 	}
 </script>
 
@@ -198,18 +175,7 @@
 						<!-- DFA state path -->
 						<div class="trace-group">
 							<span class="label">2. Transisi State DFA (Pencocok Pattern)</span>
-							<div class="dfa-path-scroll">
-								<div class="dfa-path">
-									{#each result.trace.dfa_path.split(' → ') as state, index}
-										{#if index > 0}
-											<div class="dfa-arrow">→</div>
-										{/if}
-										<div class="dfa-node" class:toxic-node={state.includes('TOXIC')} class:safe-node={state.includes('Safe')}>
-											{state}
-										</div>
-									{/each}
-								</div>
-							</div>
+							<AutomataVisualizer dfaPath={result.trace.dfa_path} normalizedText={result.normalized} />
 						</div>
 
 					</div>
@@ -265,11 +231,19 @@
 			</div>
 			<div class="step-card glass-card">
 				<div class="step-bg-icon">
-					<ClipboardCheck size={110} />
+					<Code size={110} />
 				</div>
 				<div class="step-num">3</div>
+				<h3>Aturan (Regex)</h3>
+				<p>Mendefinisikan pattern formal kata kotor untuk menangkap variasi tulisan sensor.</p>
+			</div>
+			<div class="step-card glass-card">
+				<div class="step-bg-icon">
+					<ClipboardCheck size={110} />
+				</div>
+				<div class="step-num">4</div>
 				<h3>Deteksi (DFA)</h3>
-				<p>Mencocokkan kata hasil normalisasi dengan kamus toxic secara deterministik.</p>
+				<p>Mencocokkan kata hasil normalisasi secara deterministik menggunakan state machine.</p>
 			</div>
 		</div>
 
@@ -280,7 +254,7 @@
 					<span class="pulse-dot"></span>
 					<h3>Live Demo: Visualisasi Alur Automata</h3>
 				</div>
-				<p class="demo-sim-desc">Simulasi otomatis bagaimana kata slang <code class="code-highlight">gblk</code> diubah oleh NFA dan dibaca karakter-per-karakter oleh DFA.</p>
+				<p class="demo-sim-desc">Simulasi interaktif bagaimana kata slang <code class="code-highlight">gblk</code> diubah oleh NFA dan dibaca karakter-per-karakter oleh DFA.</p>
 			</div>
 
 			<div class="demo-sim-body">
@@ -302,33 +276,8 @@
 
 				<!-- Step 2: DFA Trace -->
 				<div class="demo-stage-box" style="margin-top: 20px;">
-					<div class="demo-stage-label">Tahap 2: Pengecekan Karakter (DFA) pada Kata "<span class="text-toxic">{demoWord}</span>"</div>
-					
-					<!-- Letters grid -->
-					<div class="demo-letters-row">
-						{#each demoWord.split('') as char, idx}
-							<div class="demo-char-node" class:active-char={demoStep > idx} class:current-char={demoStep === idx + 1}>
-								<span class="char-val">{char}</span>
-								<span class="char-idx">idx:{idx}</span>
-							</div>
-						{/each}
-					</div>
-
-					<!-- States flow diagram -->
-					<div class="demo-states-flow">
-						{#each demoStates as state, idx}
-							{#if idx > 0}
-								<div class="sim-flow-arrow" class:active-arrow={demoStep >= idx}>➔</div>
-							{/if}
-							<div 
-								class="sim-state-node" 
-								class:active-node={demoStep === idx}
-								class:toxic-state={state === 'q_toxic'}
-							>
-								{state}
-							</div>
-						{/each}
-					</div>
+					<div class="demo-stage-label">Tahap 2: Pengecekan Karakter (DFA)</div>
+					<AutomataVisualizer dfaPath="q0 → q1 → q6 → q11 → q12 → q13 → qTOXIC" normalizedText="goblok" />
 				</div>
 			</div>
 		</div>
@@ -563,55 +512,6 @@
 		font-style: italic;
 	}
 
-	.dfa-path-scroll {
-		overflow-x: auto;
-		padding: 4px 0;
-	}
-
-	.dfa-path {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		width: max-content;
-	}
-
-	.dfa-node {
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid var(--card-border);
-		color: var(--text-primary);
-		min-width: 38px;
-		height: 38px;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0 8px;
-		font-family: var(--font-mono);
-		font-size: 0.78rem;
-		font-weight: 600;
-	}
-
-	:root[data-theme='light'] .dfa-node {
-		background: rgba(0, 0, 0, 0.04);
-	}
-
-	.dfa-node.toxic-node {
-		background: var(--color-toxic-light);
-		color: var(--color-toxic);
-		border-color: var(--color-toxic);
-	}
-
-	.dfa-node.safe-node {
-		background: var(--color-safe-light);
-		color: var(--color-safe);
-		border-color: var(--color-safe);
-	}
-
-	.dfa-arrow {
-		font-family: var(--font-mono);
-		color: var(--text-secondary);
-		font-size: 0.9rem;
-	}
 
 	/* Empty state view */
 	.empty-state {
@@ -704,7 +604,7 @@
 
 	.system-steps {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(4, 1fr);
 		gap: 20px;
 	}
 
@@ -938,71 +838,7 @@
 
 
 
-	.sim-state-node {
-		width: 48px;
-		height: 48px;
-		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.03);
-		border: 1px solid var(--card-border);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-family: var(--font-mono);
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: var(--text-secondary);
-		transition: var(--transition-smooth);
-	}
 
-	.sim-state-node.active-node {
-		background: var(--color-accent-light);
-		border-color: var(--color-accent);
-		color: var(--color-accent);
-		transform: scale(1.12);
-		box-shadow: 0 0 15px var(--color-accent-light);
-		font-weight: 700;
-		animation: pulseGlow 1.2s infinite ease-in-out;
-	}
-
-	.sim-state-node.toxic-state.active-node {
-		background: var(--color-toxic-light);
-		border-color: var(--color-toxic);
-		color: var(--color-toxic);
-		box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
-		animation: toxicPulseGlow 1.2s infinite ease-in-out;
-	}
-
-	@keyframes bounceChar {
-		0%, 100% { transform: scale(1.08) translateY(0); }
-		50% { transform: scale(1.12) translateY(-4px); }
-	}
-
-	@keyframes pulseGlow {
-		0%, 100% { transform: scale(1.12); box-shadow: 0 0 15px var(--color-accent-light); }
-		50% { transform: scale(1.18); box-shadow: 0 0 25px var(--color-accent); }
-	}
-
-	@keyframes toxicPulseGlow {
-		0%, 100% { transform: scale(1.12); box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
-		50% { transform: scale(1.18); box-shadow: 0 0 25px var(--color-toxic); }
-	}
-
-	@keyframes safePulseGlow {
-		0%, 100% { transform: scale(1.12); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-		50% { transform: scale(1.18); box-shadow: 0 0 25px var(--color-safe); }
-	}
-
-	.sim-flow-arrow {
-		font-family: var(--font-mono);
-		color: var(--text-secondary);
-		font-size: 1rem;
-		transition: var(--transition-smooth);
-	}
-
-	.sim-flow-arrow.active-arrow {
-		color: var(--color-accent);
-		font-weight: 700;
-	}
 
 	/* Demo Live Sim Card Styles */
 	.demo-sim-card {
@@ -1111,51 +947,5 @@
 	.demo-stage-arrow {
 		font-size: 1.2rem;
 		color: var(--color-accent);
-	}
-
-	.demo-letters-row {
-		display: flex;
-		justify-content: center;
-		gap: 8px;
-		margin-bottom: 16px;
-		flex-wrap: wrap;
-	}
-
-	.demo-char-node {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		width: 46px;
-		height: 48px;
-		border-radius: var(--radius-md);
-		border: 1px solid var(--card-border);
-		background: rgba(255, 255, 255, 0.02);
-		transition: var(--transition-smooth);
-	}
-
-	.demo-char-node.active-char {
-		background: var(--color-accent-light);
-		border-color: var(--color-accent);
-		color: var(--color-accent);
-		opacity: 0.6;
-	}
-
-	.demo-char-node.current-char {
-		background: var(--color-accent);
-		border-color: var(--color-accent);
-		color: #fff;
-		transform: scale(1.08);
-		box-shadow: 0 0 10px var(--color-accent-light);
-		animation: bounceChar 1.5s infinite ease-in-out;
-	}
-
-	.demo-states-flow {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-wrap: wrap;
-		gap: 8px;
-		padding: 8px 0;
 	}
 </style>

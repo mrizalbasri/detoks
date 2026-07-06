@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { ShieldCheck } from '@lucide/svelte';
 	import '../app.css';
 
 	let { children } = $props();
@@ -15,10 +16,44 @@
 		activePath = window.location.pathname;
 	});
 
-	function toggleTheme() {
-		theme = theme === 'dark' ? 'light' : 'dark';
-		localStorage.setItem('theme', theme);
-		document.documentElement.setAttribute('data-theme', theme);
+	function toggleTheme(event: MouseEvent) {
+		const nextTheme = theme === 'dark' ? 'light' : 'dark';
+		
+		if (!document.startViewTransition || !event) {
+			theme = nextTheme;
+			localStorage.setItem('theme', nextTheme);
+			document.documentElement.setAttribute('data-theme', nextTheme);
+			return;
+		}
+
+		const x = event.clientX;
+		const y = event.clientY;
+		const endRadius = Math.hypot(
+			Math.max(x, window.innerWidth - x),
+			Math.max(y, window.innerHeight - y)
+		);
+
+		const transition = document.startViewTransition(() => {
+			theme = nextTheme;
+			localStorage.setItem('theme', nextTheme);
+			document.documentElement.setAttribute('data-theme', nextTheme);
+		});
+
+		transition.ready.then(() => {
+			document.documentElement.animate(
+				{
+					clipPath: [
+						`circle(0px at ${x}px ${y}px)`,
+						`circle(${endRadius}px at ${x}px ${y}px)`
+					]
+				},
+				{
+					duration: 450,
+					easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+					pseudoElement: '::view-transition-new(root)'
+				}
+			);
+		});
 	}
 
 	function handleNav(path: string) {
@@ -39,7 +74,9 @@
 				{#if logoLoaded}
 					<img src="/logo.webp" alt="Detox" class="logo-img" onerror={() => logoLoaded = false} />
 				{:else}
-					<span class="logo-icon">✓</span>
+					<span class="logo-icon" style="padding: 2px;">
+						<ShieldCheck size={18} color="var(--color-accent)" />
+					</span>
 					<span class="logo-text">Detox</span>
 				{/if}
 			</a>
@@ -59,7 +96,7 @@
 				</a>
 			</nav>
 
-			<button onclick={toggleTheme} class="theme-toggle" aria-label="Toggle Theme">
+			<button onclick={(e) => toggleTheme(e)} class="theme-toggle" aria-label="Toggle Theme">
 				{#if theme === 'dark'}
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
 				{:else}
@@ -135,6 +172,12 @@
 		width: auto;
 		display: block;
 		margin: -25px 0;
+		filter: invert(0.9) hue-rotate(180deg) brightness(1.2);
+		transition: var(--transition-smooth);
+	}
+
+	:root[data-theme='light'] .logo-img {
+		filter: none;
 	}
 
 	.nav-links {
@@ -231,5 +274,20 @@
 			padding: 6px 12px;
 			font-size: 0.85rem;
 		}
+	}
+
+	/* Theme toggle circular propagation animation (water ripple effect) */
+	:global(::view-transition-old(root)),
+	:global(::view-transition-new(root)) {
+		animation: none;
+		mix-blend-mode: normal;
+	}
+
+	:global(::view-transition-old(root)) {
+		z-index: 1;
+	}
+
+	:global(::view-transition-new(root)) {
+		z-index: 9999;
 	}
 </style>

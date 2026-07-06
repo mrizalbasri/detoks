@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { ChevronDown, History, Trash2 } from '@lucide/svelte';
+	import AutomataVisualizer from '$lib/components/AutomataVisualizer.svelte';
 
 	interface HistoryItem {
 		id: string;
@@ -202,18 +203,7 @@
 
 									<div class="trace-group">
 										<span class="label">Jalur Status DFA</span>
-										<div class="dfa-path-scroll">
-											<div class="dfa-path">
-												{#each item.trace.dfa_path.split(' → ') as state, index}
-													{#if index > 0}
-														<span class="dfa-arrow">→</span>
-													{/if}
-													<span class="dfa-node" class:toxic-node={state.includes('TOXIC')} class:safe-node={state.includes('Safe')}>
-														{state}
-													</span>
-												{/each}
-											</div>
-										</div>
+										<AutomataVisualizer dfaPath={item.trace.dfa_path} normalizedText={item.normalized} />
 									</div>
 								</div>
 							</div>
@@ -492,55 +482,6 @@
 		font-style: italic;
 	}
 
-	.dfa-path-scroll {
-		overflow-x: auto;
-		padding: 4px 0;
-	}
-
-	.dfa-path {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		width: max-content;
-	}
-
-	.dfa-node {
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid var(--card-border);
-		min-width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0 6px;
-		font-family: var(--font-mono);
-		font-size: 0.75rem;
-		font-weight: 600;
-	}
-
-	:root[data-theme='light'] .dfa-node {
-		background: rgba(0, 0, 0, 0.03);
-	}
-
-	.dfa-node.toxic-node {
-		background: var(--color-toxic-light);
-		color: var(--color-toxic);
-		border-color: var(--color-toxic);
-	}
-
-	.dfa-node.safe-node {
-		background: var(--color-safe-light);
-		color: var(--color-safe);
-		border-color: var(--color-safe);
-	}
-
-	.dfa-arrow {
-		font-family: var(--font-mono);
-		color: var(--text-secondary);
-		font-size: 0.8rem;
-		opacity: 0.7;
-	}
 
 	/* Empty History state */
 	.empty-card {

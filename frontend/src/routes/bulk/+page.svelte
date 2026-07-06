@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { analyzeBulk, type BulkAnalysisResult } from '$lib/api';
-	import { FileUp, Download } from '@lucide/svelte';
+	import { FileUp, Download, Search } from '@lucide/svelte';
 
 	let textInput = $state('');
 	let result = $state<BulkAnalysisResult | null>(null);
@@ -9,6 +9,19 @@
 	
 	let fileName = $state('');
 	let isDragOver = $state(false);
+
+	let searchQuery = $state('');
+	let filterStatus = $state<'ALL' | 'TOXIC' | 'SAFE'>('ALL');
+
+	let filteredResults = $derived.by(() => {
+		if (!result) return [];
+		return result.results.filter((row) => {
+			const matchesStatus = filterStatus === 'ALL' || row.result === filterStatus;
+			const matchesSearch = row.text.toLowerCase().includes(searchQuery.toLowerCase()) || 
+			                      row.normalized.toLowerCase().includes(searchQuery.toLowerCase());
+			return matchesStatus && matchesSearch;
+		});
+	});
 
 	async function handleBulkAnalyze() {
 		const lines = textInput.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
@@ -260,6 +273,27 @@
 				</div>
 			</div>
 
+			<!-- Search & Filter Controls -->
+			<div class="table-controls-row animate-fade-in" style="margin-top: 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+				<div class="search-wrapper" style="margin-bottom: 0; flex: 1; max-width: 400px; width: 100%;">
+					<span class="search-icon-inside">
+						<Search size={18} />
+					</span>
+					<input 
+						type="text" 
+						bind:value={searchQuery} 
+						placeholder="Cari kalimat atau hasil normalisasi..." 
+						class="search-input"
+					/>
+				</div>
+				
+				<div class="filter-wrapper glass-card" style="display: flex; padding: 4px; border-radius: 9999px; border: 1px solid var(--card-border);">
+					<button onclick={() => filterStatus = 'ALL'} class="filter-btn" class:active={filterStatus === 'ALL'}>Semua</button>
+					<button onclick={() => filterStatus = 'TOXIC'} class="filter-btn" class:active={filterStatus === 'TOXIC'}>Toxic</button>
+					<button onclick={() => filterStatus = 'SAFE'} class="filter-btn" class:active={filterStatus === 'SAFE'}>Aman</button>
+				</div>
+			</div>
+			
 			<!-- Result Table (from wireframe) -->
 			<div class="glass-card table-card animate-fade-in">
 				<div class="table-wrapper">
@@ -273,9 +307,10 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each result.results as row, idx}
+							{#each filteredResults as row}
+								{@const origIdx = result.results.indexOf(row)}
 								<tr>
-									<td class="index-cell">{idx + 1}</td>
+									<td class="index-cell">{origIdx + 1}</td>
 									<td>
 										<div class="bulk-text-display">
 											<p class="bulk-original">{row.text}</p>
@@ -299,6 +334,12 @@
 										{:else}
 											<span class="empty-text">-</span>
 										{/if}
+									</td>
+								</tr>
+							{:else}
+								<tr>
+									<td colspan="4" style="text-align: center; padding: 32px; color: var(--text-secondary);">
+										Tidak ada teks yang cocok dengan kriteria pencarian.
 									</td>
 								</tr>
 							{/each}
