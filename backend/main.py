@@ -15,11 +15,32 @@ app = FastAPI(
 # CORS configuration to allow local frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all origins for seamless dev integration
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Kata-kata sensitif yang tidak boleh ditampilkan di UI frontend
+SENSITIVE_WORDS = {"kontol", "memek", "peler", "puki", "jembut", "pussy", "dick"}
+
+def sensor_sensitive_words(words_list: List[str]) -> List[str]:
+    """
+    Menyensor kata-kata sensitif agar tidak ditampilkan langsung di UI.
+    Misal: "kontol" -> "k***ol"
+    """
+    sensored = []
+    for word in words_list:
+        if word.lower() in SENSITIVE_WORDS:
+            # Sensor dengan menyisakan huruf pertama dan terakhir
+            w_len = len(word)
+            if w_len > 2:
+                sensored.append(word[0] + "*" * (w_len - 2) + word[-1])
+            else:
+                sensored.append("*" * w_len)
+        else:
+            sensored.append(word)
+    return sensored
 
 # --- Pydantic Schemas ---
 
@@ -80,13 +101,36 @@ def analyze_single(payload: AnalyzeRequest):
     
     result_status = "TOXIC" if len(detected_words) > 0 else "SAFE"
     
+    # Sensor kata-kata vulgar di daftar kata terdeteksi & hasil normalisasi sebelum dikirim ke frontend
+    safe_detected_words = sensor_sensitive_words(detected_words)
+    
+    # Sensor juga di teks normalisasi agar tidak memunculkan kata vulgar tersebut di UI
+    safe_normalized = normalized
+    for word in SENSITIVE_WORDS:
+        # Cari kata terlarang dalam teks dengan regex (case insensitive)
+        pattern = r"\b" + re.escape(word) + r"\b"
+        w_len = len(word)
+        replacement = word[0] + "*" * (w_len - 2) + word[-1] if w_len > 2 else "*" * w_len
+        safe_normalized = re.sub(pattern, replacement, safe_normalized, flags=re.IGNORECASE)
+    
+    # Sensor langkah NFA trace agar aman di UI
+    safe_nfa_steps = []
+    for step in nfa_steps:
+        temp_step = step
+        for word in SENSITIVE_WORDS:
+            pattern = r"\b" + re.escape(word) + r"\b"
+            w_len = len(word)
+            replacement = word[0] + "*" * (w_len - 2) + word[-1] if w_len > 2 else "*" * w_len
+            temp_step = re.sub(pattern, replacement, temp_step, flags=re.IGNORECASE)
+        safe_nfa_steps.append(temp_step)
+        
     return AnalyzeResponse(
         original=text,
-        normalized=normalized,
+        normalized=safe_normalized,
         result=result_status,
-        detected_words=detected_words,
+        detected_words=safe_detected_words,
         trace=TraceModel(
-            nfa_steps=nfa_steps,
+            nfa_steps=safe_nfa_steps,
             dfa_path=dfa_path
         )
     )
@@ -110,11 +154,20 @@ def analyze_bulk(payload: BulkAnalyzeRequest):
         if is_toxic:
             toxic_count += 1
             
+        # Sensor untuk hasil bulk
+        safe_detected_words = sensor_sensitive_words(detected_words)
+        safe_normalized = normalized
+        for word in SENSITIVE_WORDS:
+            pattern = r"\b" + re.escape(word) + r"\b"
+            w_len = len(word)
+            replacement = word[0] + "*" * (w_len - 2) + word[-1] if w_len > 2 else "*" * w_len
+            safe_normalized = re.sub(pattern, replacement, safe_normalized, flags=re.IGNORECASE)
+            
         results.append(BulkItemResponse(
             text=text,
-            normalized=normalized,
+            normalized=safe_normalized,
             result="TOXIC" if is_toxic else "SAFE",
-            detected_words=detected_words
+            detected_words=safe_detected_words
         ))
         
     return BulkAnalyzeResponse(
