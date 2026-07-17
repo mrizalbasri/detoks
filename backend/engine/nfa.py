@@ -20,13 +20,46 @@ class NFANormalizer:
         else:
             print("slang.json not found, using empty dict")
 
-    def clean_word(self, word: str) -> tuple[str, str]:
-        # Memisahkan tanda baca di depan/belakang kata
-        # Mengembalikan (clean_word, punctuation_suffix)
-        match = re.match(r"^([^.,\/#!$%\^&\*;:{}=\-_`~()]*)(.*)$", word)
-        if match:
-            return match.group(1), match.group(2)
-        return word, ""
+    def apply_leet_rules(self, word: str) -> str:
+        # Aturan transformasi karakter leet-speak ke huruf normal
+        rules = {
+            '1': 'i',
+            '0': 'o',
+            '3': 'e',
+            '4': 'a',
+            '5': 's',
+            '7': 't',
+            '8': 'b',
+            'z': 's'
+        }
+        new_word = list(word)
+        changed = False
+        for i, char in enumerate(new_word):
+            if char in rules:
+                new_word[i] = rules[char]
+                changed = True
+        
+        return "".join(new_word) if changed else word
+
+    def clean_word(self, word: str) -> tuple[str, str, str]:
+        # Memisahkan tanda baca di depan dan belakang kata
+        # Mengembalikan (prefix, clean_word, suffix)
+        punc = r".,\/#!$%\^&\*;:{}=\-_`~()"
+        
+        # Cari prefix tanda baca
+        prefix_match = re.match(r"^[" + punc + r"]*", word)
+        prefix = prefix_match.group(0) if prefix_match else ""
+        
+        # Cari suffix tanda baca
+        suffix_match = re.search(r"[" + punc + r"]*$", word)
+        suffix = suffix_match.group(0) if suffix_match else ""
+        
+        # Potong prefix dan suffix dari word
+        clean = word[len(prefix):]
+        if suffix:
+            clean = clean[:-len(suffix)]
+            
+        return prefix, clean, suffix
 
     def normalize(self, text: str) -> tuple[str, list[str]]:
         if not text:
@@ -39,15 +72,25 @@ class NFANormalizer:
         for word in words:
             # Ubah ke lowercase
             lower_word = word.lower()
-            clean, suffix = self.clean_word(lower_word)
+            prefix, clean, suffix = self.clean_word(lower_word)
             
-            # Cek ke slang map
-            if clean in self.slang_map:
-                canonical = self.slang_map[clean]
-                nfa_steps.append(f"{clean} → {canonical}")
-                normalized_words.append(canonical + suffix)
-            else:
-                normalized_words.append(clean + suffix)
+            current_word = clean
+            
+            # 1. Terapkan aturan transformasi leet-speak (pattern-based rules)
+            rule_transformed = self.apply_leet_rules(current_word)
+            if rule_transformed != current_word:
+                nfa_steps.append(f"{current_word} → {rule_transformed} (rule)")
+                current_word = rule_transformed
+
+            # 2. Cek ke slang map (dictionary-based)
+            if current_word in self.slang_map:
+                canonical = self.slang_map[current_word]
+                # Hindari duplikasi jika rule sudah mengubahnya ke bentuk baku
+                if canonical != current_word:
+                    nfa_steps.append(f"{current_word} → {canonical}")
+                current_word = canonical
+            
+            normalized_words.append(prefix + current_word + suffix)
 
         normalized_text = " ".join(normalized_words)
         return normalized_text, nfa_steps

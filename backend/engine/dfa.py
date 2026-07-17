@@ -25,33 +25,46 @@ class DFAMatcher:
             print("toxic.json not found, using empty list")
 
     def clean_text_for_matching(self, text: str) -> str:
-        # Bersihkan dari tanda baca agar matching exact lebih akurat
-        return re.sub(r"[.,\/#!$%\^&\*;:{}=\-_`~()]", "", text.lower())
+        # Bersihkan dari tanda baca kecuali yang digunakan sebagai substitusi leet/sensor (*, _, @, $, !)
+        return re.sub(r"[.,\/#%\^&\*;:{}=\-`~()]", "", text.lower())
 
-    def match(self, normalized_text: str) -> tuple[list[str], str]:
+    def match(self, normalized_text: str) -> tuple[list[str], str, str]:
         # 1. Bersihkan tanda baca dan split per kata
-        clean_text = self.clean_text_for_matching(normalized_text)
-        words = clean_text.split()
+        # Tetapi kita juga ingin mengganti kata-kata yang tidak baku (seperti b@ngs@t atau g*bl*k)
+        # menjadi kata bakunya di dalam teks asli hasil normalisasi.
         
+        words = normalized_text.split()
         detected_words = []
+        cleaned_words = []
         
-        # 2. Cek setiap kata dengan Regex & Exact Match
-        # (Gabungan Regex Layer + DFA Exact Match Layer)
-        for word in words:
-            is_word_toxic = False
+        for raw_word in words:
+            # Bersihkan word dari tanda baca untuk matching
+            word = self.clean_text_for_matching(raw_word)
+            if not word:
+                cleaned_words.append(raw_word)
+                continue
+                
+            matched_clean_word = None
             
             # Cek exact match ke list toxic
             if word in self.toxic_words:
-                detected_words.append(word)
-                is_word_toxic = True
+                matched_clean_word = word
             else:
                 # Cek pakai regex pattern (leet-speak)
-                for pattern in self.compiled_patterns:
+                for pattern, original_word in self.compiled_patterns:
                     if pattern.match(word):
-                        detected_words.append(word)
-                        is_word_toxic = True
+                        matched_clean_word = original_word
                         break
-
+            
+            if matched_clean_word:
+                detected_words.append(matched_clean_word)
+                # Kembalikan tanda baca jika ada suffix/prefix di raw_word
+                pattern_raw = re.compile(re.escape(word), re.IGNORECASE)
+                cleaned_word = pattern_raw.sub(matched_clean_word, raw_word)
+                cleaned_words.append(cleaned_word)
+            else:
+                cleaned_words.append(raw_word)
+                
         # Hilangkan duplikat kata terdeteksi
         detected_words = list(set(detected_words))
         is_toxic = len(detected_words) > 0
@@ -68,7 +81,8 @@ class DFAMatcher:
         else:
             dfa_path += " → q1 → q2 → qSafe"
 
-        return detected_words, dfa_path
+        clean_normalized_text = " ".join(cleaned_words)
+        return detected_words, dfa_path, clean_normalized_text
 
 # Singleton instance
 matcher = DFAMatcher()
