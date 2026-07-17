@@ -98,7 +98,7 @@ def analyze_single(payload: AnalyzeRequest):
     normalized, nfa_steps = normalizer.normalize(text)
     
     # 2. DFA Matching Layer
-    detected_words, dfa_path = matcher.match(normalized)
+    detected_words, dfa_path, clean_normalized = matcher.match(normalized)
     
     result_status = "TOXIC" if len(detected_words) > 0 else "SAFE"
     
@@ -106,7 +106,7 @@ def analyze_single(payload: AnalyzeRequest):
     safe_detected_words = sensor_sensitive_words(detected_words)
     
     # Sensor juga di teks normalisasi agar tidak memunculkan kata vulgar tersebut di UI
-    safe_normalized = normalized
+    safe_normalized = clean_normalized
     for word in SENSITIVE_WORDS:
         # Cari kata terlarang dalam teks dengan regex (case insensitive)
         pattern = r"\b" + re.escape(word) + r"\b"
@@ -149,7 +149,7 @@ def analyze_bulk(payload: BulkAnalyzeRequest):
         # NFA Normalization
         normalized, _ = normalizer.normalize(text)
         # DFA Matching
-        detected_words, _ = matcher.match(normalized)
+        detected_words, _, clean_normalized = matcher.match(normalized)
         
         is_toxic = len(detected_words) > 0
         if is_toxic:
@@ -157,7 +157,7 @@ def analyze_bulk(payload: BulkAnalyzeRequest):
             
         # Sensor untuk hasil bulk
         safe_detected_words = sensor_sensitive_words(detected_words)
-        safe_normalized = normalized
+        safe_normalized = clean_normalized
         for word in SENSITIVE_WORDS:
             pattern = r"\b" + re.escape(word) + r"\b"
             w_len = len(word)

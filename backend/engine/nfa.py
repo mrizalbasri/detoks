@@ -4,6 +4,7 @@ import re
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SLANG_JSON_PATH = os.path.join(BASE_DIR, 'lexicon', 'slang.json')
+GENZ_JSON_PATH = os.path.join(BASE_DIR, 'dataset', 'genz_slang.json')
 
 class NFANormalizer:
     def __init__(self):
@@ -11,6 +12,7 @@ class NFANormalizer:
         self.load_slang_lexicon()
 
     def load_slang_lexicon(self):
+        # 1. Load standard slang lexicon
         if os.path.exists(SLANG_JSON_PATH):
             try:
                 with open(SLANG_JSON_PATH, 'r', encoding='utf-8') as f:
@@ -19,6 +21,17 @@ class NFANormalizer:
                 print(f"Error loading slang.json: {e}")
         else:
             print("slang.json not found, using empty dict")
+
+        # 2. Load and merge Gen Z slang lexicon (preserving existing mappings)
+        if os.path.exists(GENZ_JSON_PATH):
+            try:
+                with open(GENZ_JSON_PATH, 'r', encoding='utf-8') as f:
+                    genz_map = json.load(f)
+                    for k, v in genz_map.items():
+                        if k not in self.slang_map:
+                            self.slang_map[k] = v
+            except Exception as e:
+                print(f"Error loading genz_slang.json: {e}")
 
     def apply_leet_rules(self, word: str) -> str:
         # Aturan transformasi karakter leet-speak ke huruf normal
