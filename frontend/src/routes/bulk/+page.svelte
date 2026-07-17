@@ -72,6 +72,61 @@
 				textInput = e.target?.result as string;
 			};
 			reader.readAsText(file);
+		} else if (ext === 'json' || ext === 'jsonl') {
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const content = e.target?.result as string;
+				try {
+					if (ext === 'json') {
+						const parsed = JSON.parse(content);
+						if (Array.isArray(parsed)) {
+							const texts = parsed.map((item: any) => typeof item === 'string' ? item : (item.text || item.comment || '')).filter(Boolean);
+							textInput = texts.slice(0, 1000).join('\n');
+						} else if (parsed.texts && Array.isArray(parsed.texts)) {
+							textInput = parsed.texts.slice(0, 1000).join('\n');
+						} else {
+							error = 'Format JSON tidak didukung. Harus berupa array teks.';
+						}
+					} else {
+						// JSONL (JSON Lines)
+						const lines = content.split('\n').filter(l => l.trim());
+						const texts: string[] = [];
+						for (const line of lines) {
+							try {
+								const parsed = JSON.parse(line);
+								const txt = parsed.text || parsed.comment || parsed.sentence || '';
+								if (txt) texts.push(txt.replace(/\n/g, ' '));
+							} catch (err) {
+								// skip malformed line
+							}
+						}
+						textInput = texts.slice(0, 1000).join('\n');
+					}
+				} catch (err) {
+					error = 'Gagal membaca file JSON/JSONL';
+				}
+			};
+			reader.readAsText(file);
+		} else if (ext === 'csv') {
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const content = e.target?.result as string;
+				const lines = content.split('\n').filter(l => l.trim());
+				const texts: string[] = [];
+				for (const line of lines) {
+					let row = line;
+					if (line.startsWith('"') && line.endsWith('"')) {
+						row = line.slice(1, -1);
+					}
+					const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+					const mainCol = cols.find(c => c.length > 15) || cols[0];
+					if (mainCol) {
+						texts.push(mainCol.replace(/^"|"$/g, '').trim());
+					}
+				}
+				textInput = texts.slice(0, 1000).join('\n');
+			};
+			reader.readAsText(file);
 		} else if (ext === 'docx') {
 			const reader = new FileReader();
 			reader.onload = async (e) => {
@@ -122,7 +177,7 @@
 			};
 			reader.readAsArrayBuffer(file);
 		} else {
-			error = 'Format file tidak didukung. Gunakan file format .txt, .docx, atau .pdf';
+			error = 'Format file tidak didukung. Gunakan file format .txt, .csv, .json, .jsonl, .docx, atau .pdf';
 			fileName = '';
 		}
 	}
@@ -177,6 +232,8 @@
 </script>
 
 <svelte:head>
+	<title>Bulk Checker - Moderasi Teks Masal | Detox</title>
+	<meta name="description" content="Periksa banyak kalimat atau file dokumen secara sekaligus. Unggah file TXT, PDF, atau DOCX untuk deteksi konten toksik masal menggunakan engine automata." />
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </svelte:head>
@@ -200,14 +257,14 @@
 			<input 
 				type="file" 
 				id="file-upload" 
-				accept=".txt,.docx,.pdf" 
+				accept=".txt,.docx,.pdf,.csv,.json,.jsonl" 
 				class="file-input" 
 				onchange={handleFileSelect} 
 			/>
 			<label for="file-upload" class="upload-label">
 				<span class="upload-icon" style="display: flex; justify-content: center; margin-bottom: 8px;"><FileUp size={44} color="var(--color-accent)" /></span>
 				<h3>{fileName || 'Seret file ke sini atau klik untuk pilih'}</h3>
-				<p>Mendukung format .txt, .docx (Word), dan .pdf</p>
+				<p>Mendukung format .txt, .csv, .json, .jsonl, .docx, dan .pdf</p>
 			</label>
 		</div>
 

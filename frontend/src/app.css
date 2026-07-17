@@ -1,5 +1,5 @@
 /* app.css: Global styles with light/dark variables and glassmorphic designs */
-/* ponytail: single unified stylesheet with responsive and clean layout classes */
+/* ponytail: single unified stylesheet with responsive classes. ceiling: file size > 30KB, upgrade: split into modular CSS files if layout grows. */
 
 :root {
 	--font-sans: 'IBM Plex Sans', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

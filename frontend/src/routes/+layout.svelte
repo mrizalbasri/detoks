@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { ShieldCheck } from '@lucide/svelte';
 	import '../app.css';
 
@@ -64,6 +65,7 @@
 <svelte:head>
 	<link rel="icon" href="/logo.ico?v=1" />
 	<title>Detox - Web-Based Automata Intelligence</title>
+	<link rel="canonical" href={$page ? `https://detox-app.vercel.app${$page.url.pathname}` : 'https://detox-app.vercel.app/'} />
 </svelte:head>
 
 <div class="app-layout">
@@ -114,7 +116,7 @@
 	<!-- Bottom Footer -->
 	<footer class="footer-wrapper">
 		<div class="footer-container">
-			<p>© 2026 Group Greenflag · President University Pekanbaru</p>
+			<p>© 2026 <a href="https://pekanbaru.president.ac.id/" target="_blank" rel="noopener noreferrer" class="footer-link">President University Pekanbaru</a></p>
 			<p class="sub-text">Formal Language and Automata (FLA) · Lecturer: Shella Eldwina Fitri S.T., M.Eng</p>
 		</div>
 	</footer>
@@ -250,6 +252,17 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
+	}
+
+	.footer-link {
+		color: var(--text-primary);
+		text-decoration: none;
+		transition: var(--transition-smooth);
+	}
+
+	.footer-link:hover {
+		color: var(--color-accent);
+		text-decoration: underline;
 	}
 
 	.sub-text {

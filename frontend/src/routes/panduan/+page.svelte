@@ -106,6 +106,11 @@
 	];
 </script>
 
+<svelte:head>
+	<title>Panduan Penggunaan & Kamus Slang Automata | Detox</title>
+	<meta name="description" content="Pelajari cara kerja deteksi kalimat toksik berbasis NFA dan DFA. Temukan panduan integrasi, kamus kosakata kasar, dan FAQ di Detox." />
+</svelte:head>
+
 <div class="container animate-fade-in">
 	<div class="hero-section">
 		<h1>Panduan Penggunaan</h1>
@@ -385,7 +390,7 @@
 		flex-direction: column;
 	}
 
-	/* ponytail: removed side colored borders to avoid generic generated-AI aesthetics */
+	/* ponytail: removed side colored borders to avoid generic AI styles. ceiling: custom design system update, upgrade: restore borders if theme guidelines require them. */
 
 	.text-safe {
 		color: var(--color-safe);

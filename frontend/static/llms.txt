@@ -1,0 +1,22 @@
+# Detox - Web-Based Automata Intelligence
+
+Detox is a web-based toxic content moderation system using automata theory (NFA for slang normalization and DFA for pattern matching). It detects toxic Indonesian words and phrases with linear O(n) time complexity.
+
+## Key Features
+
+- **Analyzer**: Single text input analysis with live transition path visualization (NFA/DFA).
+- **Bulk Checker**: Upload TXT, PDF, or DOCX files for batch toxicity checks.
+- **Kamus / Lexicon**: Customizable slang-to-formal normalization map and toxic word list.
+- **Riwayat**: Local history log of text checks and automata path traces.
+
+## Technology Stack
+
+- **Frontend**: SvelteKit (SPA/runes mode) with Lucide Icons.
+- **Backend**: FastAPI (Python 3.10+) serving the NFA/DFA processing engine.
+
+## Authors & Institution
+
+- Developed by Group Greenflag (Cut Sarah Alisa, M. Rizal Basri, Wesnita Ruth Angie)
+- Institution: President University Pekanbaru
+- Course: Formal Language and Automata (FLA)
+- Lecturer: Shella Eldwina Fitri S.T., M.Eng

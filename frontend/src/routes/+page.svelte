@@ -65,6 +65,42 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Detox - Deteksi Kalimat Toksik dengan Automata Intelligence</title>
+	<meta name="description" content="Detox membantu Anda mendeteksi kata dan kalimat toksik (kasar/kotor) dalam bahasa Indonesia menggunakan normalisasi NFA dan pencocokan DFA secara instan." />
+	<script type="application/ld+json">
+		{@html JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "WebApplication",
+			"name": "Detox",
+			"alternateName": "Detox Teks Automata",
+			"url": "https://detox-app.vercel.app/",
+			"description": "Aplikasi berbasis web untuk mendeteksi kalimat dan kata-kata toksik bahasa Indonesia menggunakan engine automata (NFA & DFA).",
+			"applicationCategory": "SafetyApplication, EducationalApplication",
+			"operatingSystem": "All",
+			"browserRequirements": "Requires JavaScript. Requires HTML5.",
+			"author": [
+				{
+					"@type": "Person",
+					"name": "Cut Sarah Alisa"
+				},
+				{
+					"@type": "Person",
+					"name": "M. Rizal Basri"
+				},
+				{
+					"@type": "Person",
+					"name": "Wesnita Ruth Angie"
+				}
+			],
+			"publisher": {
+				"@type": "Organization",
+				"name": "President University Pekanbaru"
+			}
+		})}
+	</script>
+</svelte:head>
+
 <div class="container animate-fade-in">
 	<div class="hero-section">
 		<h1>Cek amannya teks kamu</h1>
@@ -305,20 +341,20 @@
 
 	<!-- Tim Pengembang (from user HTML) -->
 	<div class="developers-section">
-		<h3 class="developers-title">Tim Pengembang (Group Greenflag)</h3>
+		<h3 class="developers-title">Tim Pengembang</h3>
 		<div class="dev-badges">
-			<div class="dev-badge glass-card">
+			<span class="dev-badge glass-card">
 				<span class="dev-icon"><User size={16} color="var(--color-accent)" /></span>
 				<span>Cut Sarah Alisa</span>
-			</div>
-			<div class="dev-badge glass-card">
+			</span>
+			<span class="dev-badge glass-card">
 				<span class="dev-icon"><User size={16} color="var(--color-accent)" /></span>
 				<span>M. Rizal Basri</span>
-			</div>
-			<div class="dev-badge glass-card">
+			</span>
+			<span class="dev-badge glass-card">
 				<span class="dev-icon"><User size={16} color="var(--color-accent)" /></span>
 				<span>Wesnita Ruth Angie</span>
-			</div>
+			</span>
 		</div>
 	</div>
 </div>
@@ -680,7 +716,7 @@
 		padding: 24px;
 	}
 
-	/* ponytail: removed side colored borders to avoid generic generated-AI aesthetics */
+	/* ponytail: removed side colored borders to avoid generic AI styles. ceiling: custom design system update, upgrade: restore borders if theme guidelines require them. */
 
 	.info-card h3 {
 		font-size: 1.15rem;
@@ -809,7 +845,11 @@
 		font-size: 0.9rem;
 		font-weight: 500;
 		box-shadow: var(--shadow-lg);
+		color: var(--text-primary);
+		text-decoration: none;
+		transition: var(--transition-smooth);
 	}
+
 
 	.dev-icon {
 		display: flex;

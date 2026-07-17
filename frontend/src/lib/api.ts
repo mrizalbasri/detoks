@@ -1,5 +1,5 @@
 // api.ts: API helper with local automata fallback for Detox
-// ponytail: client-side rule engine fallback to allow offline testing
+// ponytail: client-side rule engine fallback for offline testing. ceiling: lexicon > 500 words, upgrade: fetch dynamic lexicon from backend.
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -38,7 +38,10 @@ const DEFAULT_SLANG_MAP: Record<string, string> = {
 	lu: 'kamu',
 	lo: 'kamu',
 	tdk: 'tidak',
-	dgn: 'dengan'
+	dgn: 'dengan',
+	makasih: 'terima kasih',
+	parh: 'parah',
+	anj1ng: 'anjing'
 };
 
 // Local toxic dictionary for DFA simulation
@@ -70,6 +73,28 @@ export function saveCustomLexicon(slang: Record<string, string>, toxic: string[]
 	localStorage.setItem('detox_custom_toxic', JSON.stringify(toxic));
 }
 
+function applyLeetRules(word: string): string {
+	const rules: Record<string, string> = {
+		'1': 'i',
+		'0': 'o',
+		'3': 'e',
+		'4': 'a',
+		'5': 's',
+		'7': 't',
+		'8': 'b',
+		'z': 's'
+	};
+	let changed = false;
+	const chars = word.split('').map((char) => {
+		if (rules[char]) {
+			changed = true;
+			return rules[char];
+		}
+		return char;
+	});
+	return changed ? chars.join('') : word;
+}
+
 /**
  * Local simulation of the NFA normalizer and DFA matcher
  */
@@ -77,34 +102,114 @@ function localAnalyze(text: string): AnalysisResult {
 	const { slang, toxic } = getLexicon();
 	const toxicSet = new Set(toxic);
 	
-	const words = text.toLowerCase().split(/\s+/);
+	const words = text.split(/\s+/);
 	const nfa_steps: string[] = [];
 	const normalizedWords = words.map((word) => {
-		// Strip punctuation
-		const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '');
-		if (slang[cleanWord]) {
-			nfa_steps.push(`${cleanWord} → ${slang[cleanWord]}`);
-			return slang[cleanWord];
+		const lowerWord = word.toLowerCase();
+		const punc = ".,\\/#!$%\\^&*;:{}=\\-_`~()";
+		const prefixMatch = lowerWord.match(new RegExp(`^[${punc}]*`));
+		const prefix = prefixMatch ? prefixMatch[0] : "";
+		const suffixMatch = lowerWord.match(new RegExp(`[${punc}]*$`));
+		const suffix = suffixMatch ? suffixMatch[0] : "";
+		
+		let cleanWord = lowerWord.slice(prefix.length);
+		if (suffix) {
+			cleanWord = cleanWord.slice(0, -suffix.length);
 		}
-		return cleanWord;
+		
+		let current = cleanWord;
+
+		// 1. Terapkan aturan transformasi leet-speak
+		const leetTransformed = applyLeetRules(current);
+		if (leetTransformed !== current) {
+			nfa_steps.push(`${current} → ${leetTransformed} (rule)`);
+			current = leetTransformed;
+		}
+
+		// 2. Cek ke slang map
+		if (slang[current]) {
+			const canonical = slang[current];
+			if (canonical !== current) {
+				nfa_steps.push(`${current} → ${canonical}`);
+			}
+			current = canonical;
+		}
+
+		return prefix + current + suffix;
 	});
 
 	const normalized = normalizedWords.join(' ');
-	const detected: string[] = [];
+	const cleanWords = normalizedWords.map(w => w.replace(/[.,\/#%\^&\*;:{}=\-`~()]/g, ''));
 	
-	normalizedWords.forEach((word) => {
+	const LEET_MAP: Record<string, string> = {
+		a: '[a4@\\*_]',
+		i: '[i1!\\*_]',
+		o: '[o0\\*_]',
+		e: '[e3\\*_]',
+		u: '[u\\*_]',
+		s: '[s5$\\*_]',
+		g: '[g9\\*_]',
+		t: '[t7\\*_]',
+		b: '[b8\\*_]'
+	};
+
+	const compiledPatterns = toxic.map((tWord) => {
+		const parts = tWord.toLowerCase().split('').map(char => {
+			if (LEET_MAP[char]) {
+				return LEET_MAP[char];
+			}
+			if (/[a-z]/i.test(char)) {
+				return `[${char}\\*_]`;
+			}
+			return char.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+		});
+		return {
+			pattern: new RegExp(`^${parts.join('')}$`, 'i'),
+			original: tWord
+		};
+	});
+
+	const detected: string[] = [];
+	const cleanedWords: string[] = [];
+
+	normalizedWords.forEach((rawWord, idx) => {
+		const word = cleanWords[idx];
+		if (!word.trim()) {
+			cleanedWords.push(rawWord);
+			return;
+		}
+
+		let matchedCleanWord: string | null = null;
 		if (toxicSet.has(word)) {
-			detected.push(word);
+			matchedCleanWord = word;
+		} else {
+			for (const { pattern, original } of compiledPatterns) {
+				if (pattern.test(word)) {
+					matchedCleanWord = original;
+					break;
+				}
+			}
+		}
+
+		if (matchedCleanWord) {
+			detected.push(matchedCleanWord);
+			const cleanRegex = new RegExp(word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
+			const cleanedWord = rawWord.replace(cleanRegex, matchedCleanWord);
+			cleanedWords.push(cleanedWord);
+		} else {
+			cleanedWords.push(rawWord);
 		}
 	});
 
-	const isToxic = detected.length > 0;
+	const uniqueDetected = Array.from(new Set(detected));
+	const isToxic = uniqueDetected.length > 0;
+	const cleanNormalized = cleanedWords.join(' ');
 	
 	// Simulate realistic DFA paths for FLA project vibe
 	let dfa_path = 'q0';
 	if (isToxic) {
 		let state = 1;
-		detected.forEach((_, index) => {
+		uniqueDetected.forEach((_, index) => {
 			dfa_path += ` → q${state} → q${state + 5} → q${state + 10}`;
 			state += 1;
 		});
@@ -115,9 +220,9 @@ function localAnalyze(text: string): AnalysisResult {
 
 	return {
 		original: text,
-		normalized,
+		normalized: cleanNormalized,
 		result: isToxic ? 'TOXIC' : 'SAFE',
-		detected_words: detected,
+		detected_words: uniqueDetected,
 		trace: {
 			nfa_steps,
 			dfa_path

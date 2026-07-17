@@ -68,6 +68,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Riwayat Analisis - Cek Log Deteksi | Detox</title>
+	<meta name="robots" content="noindex, nofollow" />
+</svelte:head>
+
 <div class="container animate-fade-in">
 	<div class="hero-section">
 		<h1>Riwayat Analisis</h1>
